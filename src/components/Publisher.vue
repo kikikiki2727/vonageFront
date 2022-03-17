@@ -1,8 +1,15 @@
 <template>
   <div class="top">
     <h1>Publisher</h1>
-    <div id="videos"></div>
-    <button @click="sendRequest()">参加リクエストを送る</button>
+    <p v-if="isConnection">参加中</p>
+    <div id="video_wrapper">
+      <div id="videos"></div>
+    </div>
+    <input v-model="name" />
+    <button v-if="!isConnection" @click="sendRequest()">
+      参加リクエストを送る
+    </button>
+    <button v-if="isConnection" @click="disconnectModerator">退出</button>
   </div>
 </template>
 
@@ -14,48 +21,119 @@ export default {
   data() {
     return {
       opentok: OT,
+      name: "",
+      isConnection: false,
       apiKey: process.env.VUE_APP_VONAGE_API_KEY,
       sessionId: process.env.VUE_APP_SESSION_ID,
+      signalSessionId: process.env.VUE_APP_SIGNAL_SESSION_ID,
       publisherToken: process.env.VUE_APP_PUBLISHER_TOKEN,
+      signalToken: process.env.VUE_APP_SIGNAL_MODERATOR_TOKEN,
       videoId: "videos",
       sessionObj: null,
-      authRequests: [],
+      onlySignalSessionObj: null,
+      publisherOpt: {
+        fitMode: "contain",
+        insertMode: "append",
+        name: "",
+        style: {
+          audioLevelDisplayMode: "off",
+          archiveStatusDisplayMode: "off",
+          buttonDisplayMode: "off",
+          nameDisplayMode: "on",
+        },
+      },
+      subscribeOpt: {
+        fitMode: "contain",
+        insertMode: "append",
+        style: {
+          audioBlockedDisplayMode: "off",
+          audioLevelDisplayMode: "off",
+          buttonDisplayMode: "off",
+          nameDisplayMode: "on",
+          videoDisabledDisplayMode: "off",
+        },
+      },
     };
   },
-  created() {
+  mounted() {
     this.sessionObj = this.opentok
       .initSession(this.apiKey, this.sessionId)
       .on("streamCreated", (event) => {
-        this.sessionObj.subscribe(event.stream, this.videoId);
+        this.sessionObj.subscribe(
+          event.stream,
+          this.videoId,
+          this.subscribeOpt
+        );
       });
-  },
-  mounted() {
-    this.publishObj = this.opentok.initPublisher(this.videoId);
+    this.publisherObj = this.opentok.initPublisher(
+      this.videoId,
+      this.publisherOpt
+    );
+
+    this.onlySignalSessionObj = this.opentok
+      .initSession(this.apiKey, this.signalSessionId)
+      .on("signal:allowedRequest", (event) => {
+        this.sessionObj.connect(this.publisherToken, (error) => {
+          if (error) {
+            alert("error");
+          } else {
+            this.publisherObj.destroy();
+            this.publisherOpt.name = event.data;
+            this.publisherObj = this.opentok.initPublisher(
+              this.videoId,
+              this.publisherOpt
+            );
+            this.sessionObj.publish(this.publisherObj, this.videoId);
+            this.isConnection = true;
+            console.log("publisherとして参加しました");
+          }
+        });
+      });
+
+    this.onlySignalSessionObj.connect(this.signalToken, (error) => {
+      if (error) {
+        alert("error");
+      } else {
+        console.log("signalで接続しました");
+      }
+    });
   },
   methods: {
     sendRequest() {
-      this.sessionObj.signal();
-    },
-
-    connectPublisher() {
-      this.sessionObj.connect(this.publisherToken, (error) => {
-        if (error) {
-          alert("error");
-        } else {
-          this.sessionObj.publish(this.publishObj, this.videoId);
-          console.log("publisherとして参加しました");
+      this.onlySignalSessionObj.signal(
+        {
+          type: "authRequest",
+          data: this.name,
+        },
+        (error) => {
+          if (error) {
+            console.log(error);
+          } else {
+            console.log(`send type: authRequest, data: ${this.name}`);
+            this.name = "";
+          }
         }
-      });
+      );
+    },
+    disconnectModerator() {
+      this.sessionObj.disconnect();
+      this.isConnection = false;
+      console.log("退出しました");
+      location.reload();
+      // console.log(`${JSON.stringify(event)}`);
     },
   },
 };
 </script>
 
 <style>
-#videos {
+#videos,
+#video_wrapper {
   display: flex;
+  justify-content: space-between;
+  gap: 1rem;
 }
-#videos.div {
+#videos > div {
   aspect-ratio: 16 / 9;
 }
 </style>
