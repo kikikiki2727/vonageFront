@@ -6,8 +6,20 @@
       <div id="videos"></div>
     </div>
     <input v-model="name" />
-    <button @click="connectModerator()">参加</button>
-    <button @click="disconnectModerator()">退出</button>
+    <button v-if="!isConnection" @click="connectModerator">参加</button>
+    <button v-else @click="disconnectModerator">退出</button>
+    <div v-if="isConnection">
+      <button v-if="!isBroadcast" @click="startBroadcast">配信開始</button>
+      <button v-else @click="stopBroadcast">配信停止</button>
+    </div>
+    <div class="request_wrapper">
+      <p>リクエスト一覧</p>
+      <div v-for="request in authRequests" :key="request.connectionId">
+        <p>name: {{ request.name }}</p>
+        <button @click="allowRequest(request)">承認</button>
+        <button @click="rejectRequest(request)">拒否</button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -20,12 +32,16 @@ export default {
   data() {
     return {
       opentok: OT,
-      isConnection: false,
       moderatorToken: process.env.VUE_APP_MODERATOR_TOKEN,
+      signalToken: process.env.VUE_APP_SIGNAL_MODERATOR_TOKEN,
       apiKey: process.env.VUE_APP_VONAGE_API_KEY,
       sessionId: process.env.VUE_APP_SESSION_ID,
+      signalSessionId: process.env.VUE_APP_SIGNAL_SESSION_ID,
       videoId: "videos",
+      isConnection: false,
+      isBroadcast: false,
       name: "",
+      authRequests: [],
       sessionObj: null,
       publisherObj: null,
       publisherOpt: {
@@ -53,22 +69,63 @@ export default {
     };
   },
   mounted() {
-    this.sessionObj = this.opentok
-      .initSession(this.apiKey, this.sessionId)
-      .on("streamCreated", (event) => {
+    this.sessionObj = this.opentok.initSession(this.apiKey, this.sessionId).on(
+      "streamCreated",
+      (event) => {
         this.sessionObj.subscribe(
           event.stream,
           this.videoId,
           this.subscribeOpt
         );
         console.log(`streamCreated: ${JSON.stringify(event)}`);
-      });
-    // .on("signal:authRequest", (event) => {});
+      },
+      this
+    );
 
     this.publisherObj = this.opentok.initPublisher(
       this.videoId,
       this.publisherOpt
     );
+
+    this.onlySignalSessionObj = this.opentok
+      .initSession(this.apiKey, this.signalSessionId)
+      .on(
+        "signal:authRequest",
+        (event) => {
+          this.authRequests = this.authRequests.filter((request) => {
+            return request.connectionId !== event.from.id;
+          });
+          this.authRequests.push({
+            name: event.data,
+            connectionId: event.from.id,
+          });
+          console.log(event);
+        },
+        this
+      )
+      .on("signal:requestStatus", () => {
+        this.onlySignalSessionObj.signal(
+          {
+            type: "receiveStatus",
+            data: this.isBroadcast,
+          },
+          (error) => {
+            if (error) {
+              console.log(error);
+            } else {
+              console.log("send type: receiveStatus");
+            }
+          }
+        );
+      });
+
+    this.onlySignalSessionObj.connect(this.signalToken, (error) => {
+      if (error) {
+        alert("error");
+      } else {
+        console.log("signalで接続しました");
+      }
+    });
   },
   methods: {
     connectModerator() {
@@ -96,6 +153,65 @@ export default {
       console.log("退出しました");
       location.reload();
       // console.log(`${JSON.stringify(event)}`);
+    },
+    allowRequest(request) {
+      this.onlySignalSessionObj.signal(
+        {
+          type: "allowedRequest",
+          data: request.name,
+        },
+        (error) => {
+          if (error) {
+            console.log(error);
+          } else {
+            console.log(`send type: allowedRequest`);
+          }
+        }
+      );
+
+      this.authRequests = this.authRequests.filter((authRequest) => {
+        return authRequest.connectionId !== request.connectionId;
+      });
+      console.log("リクエストが許可されました");
+    },
+
+    rejectRequest(request) {
+      this.authRequests = this.authRequests.filter((authRequest) => {
+        return authRequest.connectionId !== request.connectionId;
+      });
+      console.log("リクエストが許可されませんでした");
+    },
+
+    startBroadcast() {
+      this.onlySignalSessionObj.signal(
+        {
+          type: "startBroadcast",
+        },
+        (error) => {
+          if (error) {
+            console.log(error);
+          } else {
+            this.isBroadcast = true;
+            console.log(`send type: startBroadcast`);
+          }
+        }
+      );
+    },
+
+    stopBroadcast() {
+      this.onlySignalSessionObj.signal(
+        {
+          type: "stopBroadcast",
+        },
+        (error) => {
+          if (error) {
+            console.log(error);
+          } else {
+            this.isBroadcast = false;
+            console.log(`send type: stopBroadcast`);
+          }
+        }
+      );
     },
   },
 };
