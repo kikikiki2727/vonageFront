@@ -2,10 +2,15 @@
   <div class="top">
     <h1>Moderator</h1>
     <p v-if="isConnection">参加中</p>
+    <label
+      ><input type="checkbox" v-model="isMonitor" />モニターとして参加</label
+    >
     <div id="video_wrapper">
-      <div id="videos"></div>
+      <div v-show="!isMonitor">
+        <div id="videos"></div>
+      </div>
     </div>
-    <input v-model="name" />
+    <input v-show="!isMonitor" v-model="name" />
     <button v-if="!isConnection" @click="connectModerator">参加</button>
     <button v-else @click="disconnectModerator">退出</button>
     <div v-if="isConnection">
@@ -40,6 +45,7 @@ export default {
       videoId: "videos",
       isConnection: false,
       isBroadcast: false,
+      isMonitor: false,
       name: "",
       authRequests: [],
       sessionObj: null,
