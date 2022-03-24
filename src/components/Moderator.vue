@@ -10,6 +10,14 @@
         <div id="videos"></div>
       </div>
     </div>
+    <div v-show="!isMonitor">
+      <div id="audio">
+        <button @click="changeAudio">{{ audioText }}</button>
+      </div>
+      <div id="video">
+        <button @click="changeVideo">{{ videoText }}</button>
+      </div>
+    </div>
     <input v-show="!isMonitor" v-model="name" />
     <button v-if="!isConnection" @click="connectModerator">参加</button>
     <button v-else @click="disconnectModerator">退出</button>
@@ -46,6 +54,8 @@ export default {
       isConnection: false,
       isBroadcast: false,
       isMonitor: false,
+      activateAudio: true,
+      activateVideo: true,
       name: "",
       authRequests: [],
       sessionObj: null,
@@ -73,6 +83,14 @@ export default {
         },
       },
     };
+  },
+  computed: {
+    audioText() {
+      return this.activateAudio ? "マイクオフ" : "マイクオン";
+    },
+    videoText() {
+      return this.activateVideo ? "カメラオフ" : "カメラオン";
+    },
   },
   mounted() {
     this.sessionObj = this.opentok.initSession(this.apiKey, this.sessionId).on(
@@ -218,6 +236,15 @@ export default {
           }
         }
       );
+    },
+
+    changeAudio() {
+      this.publisherObj.publishAudio(!this.activateAudio);
+      this.activateAudio = !this.activateAudio;
+    },
+    changeVideo() {
+      this.publisherObj.publishVideo(!this.activateVideo);
+      this.activateVideo = !this.activateVideo;
     },
   },
 };

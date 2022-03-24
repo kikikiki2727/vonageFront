@@ -5,6 +5,14 @@
     <div id="video_wrapper">
       <div id="videos"></div>
     </div>
+    <div>
+      <div id="audio">
+        <button @click="changeAudio">{{ audioText }}</button>
+      </div>
+      <div id="video">
+        <button @click="changeVideo">{{ videoText }}</button>
+      </div>
+    </div>
     <input v-model="name" />
     <button v-if="!isConnection" @click="sendRequest">
       参加リクエストを送る
@@ -22,13 +30,15 @@ export default {
     return {
       opentok: OT,
       name: "",
-      isConnection: false,
       apiKey: process.env.VUE_APP_VONAGE_API_KEY,
       sessionId: process.env.VUE_APP_SESSION_ID,
       signalSessionId: process.env.VUE_APP_SIGNAL_SESSION_ID,
       publisherToken: process.env.VUE_APP_PUBLISHER_TOKEN,
       signalToken: process.env.VUE_APP_SIGNAL_MODERATOR_TOKEN,
       videoId: "videos",
+      isConnection: false,
+      activateAudio: true,
+      activateVideo: true,
       sessionObj: null,
       onlySignalSessionObj: null,
       publisherOpt: {
@@ -54,6 +64,14 @@ export default {
         },
       },
     };
+  },
+  computed: {
+    audioText() {
+      return this.activateAudio ? "マイクオフ" : "マイクオン";
+    },
+    videoText() {
+      return this.activateVideo ? "カメラオフ" : "カメラオン";
+    },
   },
   mounted() {
     this.sessionObj = this.opentok
@@ -121,6 +139,15 @@ export default {
       console.log("退出しました");
       location.reload();
       // console.log(`${JSON.stringify(event)}`);
+    },
+
+    changeAudio() {
+      this.publisherObj.publishAudio(!this.activateAudio);
+      this.activateAudio = !this.activateAudio;
+    },
+    changeVideo() {
+      this.publisherObj.publishVideo(!this.activateVideo);
+      this.activateVideo = !this.activateVideo;
     },
   },
 };
