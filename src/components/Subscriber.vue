@@ -9,10 +9,14 @@
       <p v-if="!isBroadcast">
         セミナーはまだ開催されていません。しばらくお待ちください
       </p>
-      <button :disabled="!isBroadcast" @click="connectSubscriber()">
+      <button
+        v-if="!isConnection"
+        :disabled="!isBroadcast"
+        @click="connectSubscriber()"
+      >
         参加
       </button>
-      <button v-if="isConnection" @click="disconnectSubscriber">退出</button>
+      <button v-else @click="disconnectSubscriber">退出</button>
     </div>
     <div v-else>
       <vue-loading
@@ -115,6 +119,7 @@ export default {
         if (error) {
           alert("error");
         } else {
+          this.isConnection = true;
           console.log("subscriberとして参加しました");
         }
       });
