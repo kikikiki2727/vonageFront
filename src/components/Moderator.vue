@@ -7,7 +7,11 @@
     </div>
     <input v-model="name" />
     <button v-if="!isConnection" @click="connectModerator">参加</button>
-    <button v-if="isConnection" @click="disconnectModerator">退出</button>
+    <button v-else @click="disconnectModerator">退出</button>
+    <div v-if="isConnection">
+      <button v-if="!isBroadcast" @click="startBroadcast">配信開始</button>
+      <button v-else @click="stopBroadcast">配信停止</button>
+    </div>
     <div class="request_wrapper">
       <p>リクエスト一覧</p>
       <div v-for="request in authRequests" :key="request.connectionId">
@@ -35,6 +39,7 @@ export default {
       signalSessionId: process.env.VUE_APP_SIGNAL_SESSION_ID,
       videoId: "videos",
       isConnection: false,
+      isBroadcast: false,
       name: "",
       authRequests: [],
       sessionObj: null,
@@ -97,7 +102,22 @@ export default {
           console.log(event);
         },
         this
-      );
+      )
+      .on("signal:requestStatus", () => {
+        this.onlySignalSessionObj.signal(
+          {
+            type: "receiveStatus",
+            data: this.isBroadcast,
+          },
+          (error) => {
+            if (error) {
+              console.log(error);
+            } else {
+              console.log("send type: receiveStatus");
+            }
+          }
+        );
+      });
 
     this.onlySignalSessionObj.connect(this.signalToken, (error) => {
       if (error) {
@@ -160,6 +180,38 @@ export default {
         return authRequest.connectionId !== request.connectionId;
       });
       console.log("リクエストが許可されませんでした");
+    },
+
+    startBroadcast() {
+      this.onlySignalSessionObj.signal(
+        {
+          type: "startBroadcast",
+        },
+        (error) => {
+          if (error) {
+            console.log(error);
+          } else {
+            this.isBroadcast = true;
+            console.log(`send type: startBroadcast`);
+          }
+        }
+      );
+    },
+
+    stopBroadcast() {
+      this.onlySignalSessionObj.signal(
+        {
+          type: "stopBroadcast",
+        },
+        (error) => {
+          if (error) {
+            console.log(error);
+          } else {
+            this.isBroadcast = false;
+            console.log(`send type: stopBroadcast`);
+          }
+        }
+      );
     },
   },
 };

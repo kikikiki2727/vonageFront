@@ -6,10 +6,10 @@
       <div id="videos"></div>
     </div>
     <input v-model="name" />
-    <button v-if="!isConnection" @click="sendRequest()">
+    <button v-if="!isConnection" @click="sendRequest">
       参加リクエストを送る
     </button>
-    <button v-if="isConnection" @click="disconnectModerator">退出</button>
+    <button v-else @click="disconnectPublisher">退出</button>
   </div>
 </template>
 
@@ -85,7 +85,7 @@ export default {
             );
             this.sessionObj.publish(this.publisherObj, this.videoId);
             this.isConnection = true;
-            console.log("publisherとして参加しました");
+            console.log(event);
           }
         });
       });
@@ -115,7 +115,7 @@ export default {
         }
       );
     },
-    disconnectModerator() {
+    disconnectPublisher() {
       this.sessionObj.disconnect();
       this.isConnection = false;
       console.log("退出しました");
