@@ -189,21 +189,33 @@ export default {
             console.log(error);
           } else {
             console.log(`send type: allowedRequest`);
+            this.authRequests = this.authRequests.filter((authRequest) => {
+              return authRequest.connectionId !== request.connectionId;
+            });
+            console.log("リクエストが許可されました");
           }
         }
       );
-
-      this.authRequests = this.authRequests.filter((authRequest) => {
-        return authRequest.connectionId !== request.connectionId;
-      });
-      console.log("リクエストが許可されました");
     },
 
     rejectRequest(request) {
-      this.authRequests = this.authRequests.filter((authRequest) => {
-        return authRequest.connectionId !== request.connectionId;
-      });
-      console.log("リクエストが許可されませんでした");
+      this.onlySignalSessionObj.signal(
+        {
+          type: "rejectRequest",
+          data: request.name,
+        },
+        (error) => {
+          if (error) {
+            console.log(error);
+          } else {
+            console.log(`send type: rejectRequest`);
+            this.authRequests = this.authRequests.filter((authRequest) => {
+              return authRequest.connectionId !== request.connectionId;
+            });
+            console.log("リクエストが許可されませんでした");
+          }
+        }
+      );
     },
 
     startBroadcast() {

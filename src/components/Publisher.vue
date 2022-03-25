@@ -18,14 +18,23 @@
       参加リクエストを送る
     </button>
     <button v-else @click="disconnectPublisher">退出</button>
+    <modal ref="modal">
+      <template v-slot:modalContents>
+        <p>ホストからの入室許可がおりませんでした</p>
+      </template>
+    </modal>
   </div>
 </template>
 
 <script>
+import Modal from "./shared/ModalCom.vue";
 const OT = require("@opentok/client");
 
 export default {
   name: "PublisherCom",
+  components: {
+    Modal,
+  },
   data() {
     return {
       opentok: OT,
@@ -106,6 +115,10 @@ export default {
             console.log(event);
           }
         });
+      })
+      .on("signal:rejectRequest", () => {
+        this.$refs.modal.toggleModal();
+        console.log("入室許可がおりませんでした");
       });
 
     this.onlySignalSessionObj.connect(this.signalToken, (error) => {
