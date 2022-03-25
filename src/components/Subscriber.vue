@@ -127,10 +127,10 @@ export default {
 
     disconnectSubscriber() {
       this.sessionObj.disconnect();
+      this.onlySignalSessionObj.disconnect();
       this.isConnection = false;
       console.log("退出しました");
       location.reload();
-      // console.log(`${JSON.stringify(event)}`);
     },
   },
 };

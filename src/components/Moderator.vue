@@ -2,7 +2,7 @@
   <div class="top">
     <h1>Moderator</h1>
     <p v-if="isConnection">参加中</p>
-    <label
+    <label v-show="!isConnection"
       ><input type="checkbox" v-model="isMonitor" />モニターとして参加</label
     >
     <div id="video_wrapper">
@@ -101,7 +101,7 @@ export default {
           this.videoId,
           this.subscribeOpt
         );
-        console.log(`streamCreated: ${JSON.stringify(event)}`);
+        console.log("streamCreated :", event);
       },
       this
     );
@@ -114,6 +114,16 @@ export default {
     this.onlySignalSessionObj = this.opentok
       .initSession(this.apiKey, this.signalSessionId)
       .on(
+        "connectionDestroyed",
+        (event) => {
+          this.authRequests = this.authRequests.filter((request) => {
+            return event.connection.connectionId !== request.connectionId;
+          });
+          console.log("connectionDestroyed :", event);
+        },
+        this
+      )
+      .on(
         "signal:authRequest",
         (event) => {
           this.authRequests = this.authRequests.filter((request) => {
@@ -123,7 +133,7 @@ export default {
             name: event.data,
             connectionId: event.from.id,
           });
-          console.log(event);
+          console.log("signal:authRequest :", event);
         },
         this
       )
@@ -169,14 +179,12 @@ export default {
           console.log("moderatorとして参加しました");
         }
       });
-      // console.log(`${JSON.stringify(this.sessionObj)}`);
     },
     disconnectModerator() {
       this.sessionObj.disconnect();
       this.isConnection = false;
       console.log("退出しました");
       location.reload();
-      // console.log(`${JSON.stringify(event)}`);
     },
     allowRequest(request) {
       this.onlySignalSessionObj.signal(

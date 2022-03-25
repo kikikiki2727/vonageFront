@@ -112,7 +112,7 @@ export default {
             );
             this.sessionObj.publish(this.publisherObj, this.videoId);
             this.isConnection = true;
-            console.log(event);
+            console.log("signal:allowedRequest :", event);
           }
         });
       })
@@ -148,10 +148,10 @@ export default {
     },
     disconnectPublisher() {
       this.sessionObj.disconnect();
+      this.onlySignalSessionObj.disconnect();
       this.isConnection = false;
       console.log("退出しました");
       location.reload();
-      // console.log(`${JSON.stringify(event)}`);
     },
 
     changeAudio() {
