@@ -16,37 +16,33 @@
 </template>
 
 <script>
-import VonageHelper from "../service/vonage_helper";
+// import VonageHelper from "../service/vonage_helper";
 
 export default {
   name: "TopComponent",
-  data() {
-    return {
-      apiKey: process.env.VUE_APP_VONAGE_API_KEY,
-      sessionId: process.env.VUE_APP_SESSION_ID,
-      videoId: "videos",
-      vonageHelper: VonageHelper,
-      isActive: false,
-    };
-  },
-  mounted() {
-    // window.addEventListener(
-    //   "beforeunload",
-    //   ((event) => {
-    //     const isConfirm = confirm("本当にリロードしますか？");
-    //     if (!isConfirm) {
-    //       console.log("リロードされませんでした");
-    //       event.preventDefault();
-    //     }
-    //   })()
-    // );
-    // window.addEventListener(
-    //   "unload",
-    //   (() => {
-    //     console.log("リロードされました");
-    //   })()
-    // );
-  },
+  // data() {
+  //   return {
+  // vonageHelper: VonageHelper,
+  //   };
+  // },
+  // mounted() {
+  // window.addEventListener(
+  //   "beforeunload",
+  //   ((event) => {
+  //     const isConfirm = confirm("本当にリロードしますか？");
+  //     if (!isConfirm) {
+  //       console.log("リロードされませんでした");
+  //       event.preventDefault();
+  //     }
+  //   })()
+  // );
+  // window.addEventListener(
+  //   "unload",
+  //   (() => {
+  //     console.log("リロードされました");
+  //   })()
+  // );
+  // },
   methods: {
     openTab(type) {
       const baseURL = "http://localhost:8081";
