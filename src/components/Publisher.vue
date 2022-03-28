@@ -13,6 +13,32 @@
         <button @click="changeVideo">{{ videoText }}</button>
       </div>
     </div>
+    <div id="devices">
+      <div>
+        マイク：
+        <select v-model="selectAudio">
+          <option
+            v-for="audio in audioList"
+            :key="audio.deviceId"
+            :value="audio.deviceId"
+          >
+            {{ audio.label }}
+          </option>
+        </select>
+      </div>
+      <div>
+        カメラ：
+        <select v-model="selectVideo">
+          <option
+            v-for="video in videoList"
+            :key="video.deviceId"
+            :value="video.deviceId"
+          >
+            {{ video.label }}
+          </option>
+        </select>
+      </div>
+    </div>
     <input v-model="name" />
     <button v-if="!isConnection" @click="sendRequest">
       参加リクエストを送る
@@ -48,6 +74,10 @@ export default {
       isConnection: false,
       activateAudio: true,
       activateVideo: true,
+      selectAudio: "",
+      audioList: [],
+      selectVideo: "",
+      videoList: [],
       sessionObj: null,
       onlySignalSessionObj: null,
       publisherOpt: {
@@ -74,6 +104,15 @@ export default {
       },
     };
   },
+  watch: {
+    selectAudio: function () {
+      this.publisherObj.setAudioSource(this.selectAudio);
+    },
+
+    selectVideo: function () {
+      this.publisherObj.setVideoSource(this.selectVideo);
+    },
+  },
   computed: {
     audioText() {
       return this.activateAudio ? "マイクオフ" : "マイクオン";
@@ -92,10 +131,9 @@ export default {
           this.subscribeOpt
         );
       });
-    this.publisherObj = this.opentok.initPublisher(
-      this.videoId,
-      this.publisherOpt
-    );
+    this.publisherObj = this.opentok
+      .initPublisher(this.videoId, this.publisherOpt)
+      .on("accessAllowed", (event) => this.getDevices(event));
 
     this.onlySignalSessionObj = this.opentok
       .initSession(this.apiKey, this.signalSessionId)
@@ -106,10 +144,9 @@ export default {
           } else {
             this.publisherObj.destroy();
             this.publisherOpt.name = event.data;
-            this.publisherObj = this.opentok.initPublisher(
-              this.videoId,
-              this.publisherOpt
-            );
+            this.publisherObj = this.opentok
+              .initPublisher(this.videoId, this.publisherOpt)
+              .on("accessAllowed", (event) => this.getDevices(event));
             this.sessionObj.publish(this.publisherObj, this.videoId);
             this.isConnection = true;
             console.log("signal:allowedRequest :", event);
@@ -161,6 +198,27 @@ export default {
     changeVideo() {
       this.publisherObj.publishVideo(!this.activateVideo);
       this.activateVideo = !this.activateVideo;
+    },
+
+    getDevices(event) {
+      return this.opentok.getDevices((error, devices) => {
+        if (error) {
+          console.log("devices error :", error);
+          return;
+        }
+
+        this.audioList = devices.filter((device) => {
+          return device.kind === "audioInput" && device.deviceId !== "default";
+        });
+        this.selectAudio = this.audioList[0].deviceId;
+
+        this.videoList = devices.filter((device) => {
+          return device.kind === "videoInput" && device.deviceId !== "default";
+        });
+        this.selectVideo = this.videoList[0].deviceId;
+
+        console.log("accessAllowed :", event);
+      });
     },
   },
 };
